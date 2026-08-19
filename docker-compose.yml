@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: 3x3-scorer-vercel-postgres
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: scorer_db
+      POSTGRES_USER: scorer_user
+      POSTGRES_PASSWORD: scorer_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scorer_user -d scorer_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 3x3-scorer-bot-polling
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      FORCE_SQLITE: "false"
+      USE_POSTGRES: "true"
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: scorer_db
+      PGUSER: scorer_user
+      PGPASSWORD: scorer_password
+      PGSSLMODE: disable
+    command: ["python", "run_bot.py"]
+
+volumes:
+  postgres_data:
