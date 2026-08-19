@@ -26,27 +26,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-validate_config()
+# Flask `app` должен существовать на импорте — иначе Vercel не видит entrypoint.
+app = Flask(__name__)
 
-# Один event loop на инстанс: asyncio.run() на каждый запрос убивает httpx-клиент PTB.
 _loop = asyncio.new_event_loop()
 asyncio.set_event_loop(_loop)
 _loop_lock = threading.Lock()
 _ready = False
+_bot = None
+ptb = None
 
-_bot = BasketballScorerBot(BOT_TOKEN, webhook=True)
-ptb = _bot.application
 
-app = Flask(__name__)
+def _boot():
+    """Не трогаем Telegram/Postgres на импорте — билд Vercel иначе падает без env."""
+    global _bot, ptb
+    if _bot is not None:
+        return
+    validate_config()
+    _bot = BasketballScorerBot(BOT_TOKEN, webhook=True)
+    ptb = _bot.application
 
 
 def run_async(coro):
+    _boot()
     with _loop_lock:
         return _loop.run_until_complete(coro)
 
 
 async def _ensure_initialized():
     global _ready
+    _boot()
     if not _ready:
         await ptb.initialize()
         _ready = True
