@@ -27,6 +27,7 @@ FORCE_SQLITE=true python3 run_bot.py
 Нужен Postgres снаружи (Neon / Supabase). SQLite на Vercel не живёт.
 
 1. Репо в GitHub, `vercel` import, root = этот каталог.
+   Framework Preset = **Flask** (не Other). `maxDuration` — в Settings → Functions (не в `vercel.json`: `functions.main.py` ломает билд, ищет файлы только в `api/`).
 2. Env в Vercel:
    - `BOT_TOKEN`
    - `WEBAPP_URL`, `WEBAPP_3PTS_URL`, `WEBAPP_TACTICAL_BOARD_URL`
